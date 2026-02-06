@@ -1,6 +1,5 @@
 import SwiftUI
 
-// 1. Updated Model to include a type for identification
 enum AppType {
     case commandPrompt, notepad
 }
@@ -12,11 +11,12 @@ struct WindowModel: Identifiable {
     var color: Color
     var position: CGPoint
     var isOpen: Bool = true
+    var isMinimized: Bool = false // New state for minimizing
 }
 
 struct ContentView: View {
     @State private var isStartMenuOpen = false
-    @State private var windows: [WindowModel] = [] // Start with no windows open
+    @State private var windows: [WindowModel] = []
 
     var body: some View {
         ZStack {
@@ -27,48 +27,47 @@ struct ContentView: View {
 
             // --- Window Layer ---
             ForEach(windows.indices, id: \.self) { index in
-                WindowView(window: $windows[index], onClose: {
-                    removeWindow(at: index)
-                })
-                .onTapGesture { bringToFront(index) }
+                if !windows[index].isMinimized {
+                    WindowView(window: $windows[index],
+                               onClose: { windows.remove(at: index) },
+                               onMinimize: { windows[index].isMinimized = true })
+                        .onTapGesture { bringToFront(index) }
+                        .zIndex(Double(index))
+                }
             }
 
-            // --- Start Menu Layer ---
+            // --- Start Menu ---
             if isStartMenuOpen {
                 StartMenuView(openApp: { app in
                     openApp(app)
+                    isStartMenuOpen = false
+                }, onPowerOff: {
+                    windows.removeAll() // The "Turn Off" functionality
                     isStartMenuOpen = false
                 })
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .zIndex(999)
             }
 
-            // --- Taskbar Layer ---
+            // --- Taskbar ---
             VStack {
                 Spacer()
-                TaskbarView(isStartMenuOpen: $isStartMenuOpen)
+                TaskbarView(isStartMenuOpen: $isStartMenuOpen, windows: $windows)
             }
         }
     }
 
-    // Logic to open a new window
     func openApp(_ type: AppType) {
-        let newWindow: WindowModel
-        switch type {
-        case .commandPrompt:
-            newWindow = WindowModel(type: .commandPrompt, title: "Command Prompt", color: .black, position: CGPoint(x: 250, y: 250))
-        case .notepad:
-            newWindow = WindowModel(type: .notepad, title: "Notepad", color: .white, position: CGPoint(x: 400, y: 300))
-        }
+        let newWindow = WindowModel(
+            type: type,
+            title: type == .commandPrompt ? "Command Prompt" : "Notepad",
+            color: type == .commandPrompt ? .black : .white,
+            position: CGPoint(x: 300 + CGFloat(windows.count * 20), y: 300 + CGFloat(windows.count * 20))
+        )
         windows.append(newWindow)
     }
 
-    func removeWindow(at index: Int) {
-        windows.remove(at: index)
-    }
-
     func bringToFront(_ index: Int) {
-        guard windows.indices.contains(index) else { return }
         let window = windows.remove(at: index)
         windows.append(window)
     }
@@ -78,36 +77,45 @@ struct ContentView: View {
 struct WindowView: View {
     @Binding var window: WindowModel
     var onClose: () -> Void
+    var onMinimize: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Text(window.title).font(.system(size: 12, weight: .bold))
+            // Title Bar
+            HStack(spacing: 12) {
+                Text(window.title).font(.system(size: 12, weight: .bold)).padding(.leading, 8)
                 Spacer()
-                Button(action: onClose) {
-                    Image(systemName: "xmark.circle.fill").foregroundColor(.red)
+                // Minimize Button
+                Button(action: onMinimize) {
+                    Image(systemName: "minus").foregroundColor(.white).font(.system(size: 10, weight: .bold))
                 }
+                // Close Button
+                Button(action: onClose) {
+                    Image(systemName: "xmark").foregroundColor(.white).font(.system(size: 10, weight: .bold))
+                }
+                .padding(.trailing, 8)
             }
-            .padding(.horizontal, 8).frame(height: 30)
-            .background(Color.secondary.opacity(0.8))
+            .frame(height: 30)
+            .background(Color.blue.opacity(0.9))
             .gesture(DragGesture().onChanged { value in
                 window.position.x += value.translation.width
                 window.position.y += value.translation.height
             })
 
+            // Content
             Rectangle()
                 .fill(window.color)
                 .overlay(
-                    Text(window.type == .commandPrompt ? "C:\\Users\\Admin> _" : "Welcome to Notepad...")
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundColor(window.type == .commandPrompt ? .green : .black)
+                    Text(window.type == .commandPrompt ? "Microsoft Windows [Version 10.0.2026]\n(c) Corporation. All rights reserved.\n\nC:\\Users\\Admin> _" : "Untitled - Notepad\n\nFile  Edit  Format  View  Help")
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundColor(window.type == .commandPrompt ? .green : .gray)
                         .padding(),
                     alignment: .topLeading
                 )
         }
-        .frame(width: 400, height: 300)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .shadow(radius: 20)
+        .frame(width: 400, height: 250)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .shadow(color: .black.opacity(0.3), radius: 15)
         .position(window.position)
     }
 }
@@ -115,46 +123,45 @@ struct WindowView: View {
 // MARK: - Start Menu
 struct StartMenuView: View {
     var openApp: (AppType) -> Void
+    var onPowerOff: () -> Void
 
     var body: some View {
         VStack {
             Spacer()
             VStack(alignment: .leading) {
                 Text("Pinned").font(.headline).padding([.top, .leading])
-                
-                HStack(spacing: 30) {
-                    // App 1: CMD
-                    Button(action: { openApp(.commandPrompt) }) {
-                        VStack {
-                            Image(systemName: "terminal.fill").font(.largeTitle).foregroundColor(.black)
-                            Text("CMD").font(.caption)
-                        }
-                    }
-                    
-                    // App 2: Notepad
-                    Button(action: { openApp(.notepad) }) {
-                        VStack {
-                            Image(systemName: "doc.text.fill").font(.largeTitle).foregroundColor(.blue)
-                            Text("Notepad").font(.caption)
-                        }
-                    }
-                }
-                .padding()
+                HStack(spacing: 25) {
+                    StartMenuIcon(name: "Terminal", icon: "terminal.fill", color: .black) { openApp(.commandPrompt) }
+                    StartMenuIcon(name: "Notepad", icon: "doc.text.fill", color: .blue) { openApp(.notepad) }
+                }.padding()
                 
                 Spacer()
                 
                 HStack {
-                    Circle().frame(width: 30, height: 30).foregroundColor(.gray)
-                    Text("User")
+                    Label("Admin", systemImage: "person.circle.fill")
                     Spacer()
-                    Image(systemName: "power")
+                    Button(action: onPowerOff) {
+                        Image(systemName: "power").foregroundColor(.red).font(.title3)
+                    }
                 }
-                .padding().background(Color.black.opacity(0.05))
+                .padding().background(Color.primary.opacity(0.05))
             }
-            .frame(width: 400, height: 400)
+            .frame(width: 350, height: 450)
             .background(.ultraThinMaterial)
-            .cornerRadius(12)
+            .cornerRadius(15)
             .padding(.bottom, 65)
+        }
+    }
+}
+
+struct StartMenuIcon: View {
+    let name: String; let icon: String; let color: Color; var action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            VStack {
+                Image(systemName: icon).font(.largeTitle).foregroundColor(color)
+                Text(name).font(.caption2).foregroundColor(.primary)
+            }.frame(width: 60)
         }
     }
 }
@@ -162,21 +169,37 @@ struct StartMenuView: View {
 // MARK: - Taskbar
 struct TaskbarView: View {
     @Binding var isStartMenuOpen: Bool
+    @Binding var windows: [WindowModel]
 
     var body: some View {
-        HStack {
+        HStack(spacing: 15) {
             Button(action: { withAnimation { isStartMenuOpen.toggle() } }) {
                 Image(systemName: "square.grid.2x2.fill").font(.title2)
             }
+            
+            Divider().frame(height: 25)
+            
+            // App icons for currently running apps
+            ForEach(windows.indices, id: \.self) { i in
+                Button(action: { windows[i].isMinimized.toggle() }) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(windows[i].isMinimized ? Color.clear : Color.white.opacity(0.2))
+                        Image(systemName: windows[i].type == .commandPrompt ? "terminal" : "doc.text")
+                            .foregroundColor(windows[i].isMinimized ? .gray : .white)
+                    }
+                    .frame(width: 35, height: 35)
+                }
+            }
+
             Spacer()
-            Text(Date(), style: .time).font(.caption)
+            Text(Date(), style: .time).font(.system(size: 12, weight: .medium))
         }
         .padding(.horizontal)
         .frame(height: 50)
         .background(.ultraThinMaterial)
     }
 }
-
 
 
 #Preview {
