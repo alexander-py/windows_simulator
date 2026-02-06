@@ -184,6 +184,9 @@ struct StartMenuView: View {
                     StartMenuIcon(name: "Edge", icon: "globe", color: .blue) { openApp(.browser) }
                 }.padding()
                 Spacer()
+                
+                
+                
                 Button(action: onTriggerBSOD) {
                     Label("Shut Down", systemImage: "power").foregroundColor(.red).padding()
                 }
@@ -210,7 +213,7 @@ struct TaskbarView: View {
     @Binding var windows: [WindowModel]
     var body: some View {
         HStack {
-            Button(action: { isStartMenuOpen.toggle() }) {
+            Button(action: { withAnimation { isStartMenuOpen.toggle() } }) {
                 Image(systemName: "square.grid.2x2.fill").font(.title2)
             }
             Divider().frame(height: 30)
@@ -230,9 +233,10 @@ struct TaskbarView: View {
 struct BSODView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text(":(").font(.system(size: 80))
-            Text("Your PC ran into a problem.").font(.title)
-            Text("We're just collecting some error info...").font(.body)
+            Text(":(").font(.system(size: 100))
+            Text("Your PC ran into a problem and needs to restart. We're just collecting some error info, and then we'll restart for you.")
+                .font(.title2)
+            Text("0% complete").font(.title3)
             Spacer()
         }.padding(50).foregroundColor(.white).frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.blue).ignoresSafeArea()
     }
