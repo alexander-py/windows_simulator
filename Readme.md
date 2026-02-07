@@ -2,6 +2,9 @@
 
 A high-fidelity Windows OS simulator built entirely in **SwiftUI**. This project replicates the core user experience of a desktop operating system, including window management, a functional taskbar, a Start menu, and several built-in "system" applications.
 
+![Simulator Screenshot 1](Resources/main_screen.png)
+
+
 ## 🚀 Features
 
 * **Windowing Engine**: Supports dragging, overlapping (Z-index management), minimizing, and closing windows.
@@ -14,6 +17,7 @@ A high-fidelity Windows OS simulator built entirely in **SwiftUI**. This project
 * **Settings**: Personalization hub to change desktop wallpaper colors.
 * **Command Prompt**: Terminal-style UI with classic green-on-black aesthetic.
 
+![Simulator Screenshot 2](Resources/example_screen.png)
 
 * **BSOD (Blue Screen of Death)**: A simulated system crash triggered via the Power menu.
 

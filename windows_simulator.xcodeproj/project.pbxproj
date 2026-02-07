@@ -21,6 +21,11 @@
 			path = windows_simulator;
 			sourceTree = "<group>";
 		};
+		6B418FD82F3735A2005F165F /* Resources */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Resources;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -40,6 +45,7 @@
 				6B0113132F36951900769176 /* windows_simulator */,
 				6B0113122F36951900769176 /* Products */,
 				6B418FD52F373418005F165F /* Readme.md */,
+				6B418FD82F3735A2005F165F /* Resources */,
 			);
 			sourceTree = "<group>";
 		};
@@ -68,6 +74,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				6B0113132F36951900769176 /* windows_simulator */,
+				6B418FD82F3735A2005F165F /* Resources */,
 			);
 			name = windows_simulator;
 			packageProductDependencies = (
